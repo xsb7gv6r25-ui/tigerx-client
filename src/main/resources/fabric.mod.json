@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "tigerx",
+  "version": "0.1.0",
+  "name": "TigerX Client",
+  "description": "Cliente para Minecraft Java 1.21",
+  "authors": [
+    "xsb7gv6r25-ui"
+  ],
+  "license": "CC0-1.0",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.tigerx.client.ExampleMod"
+    ]
+  },
+  "mixins": [
+    "tigerx.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.15.0",
+    "minecraft": "~1.21",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
