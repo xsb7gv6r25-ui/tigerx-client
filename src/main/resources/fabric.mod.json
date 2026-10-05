@@ -11,7 +11,10 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "com.tigerx.client.ExampleMod"
+      "com.tigerx.client.TigerXClient"
+    ],
+    "client": [
+      "com.tigerx.client.TigerXClientClient"
     ]
   },
   "mixins": [
