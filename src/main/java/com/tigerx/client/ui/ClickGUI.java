@@ -11,7 +11,6 @@ import java.util.List;
 
 public class ClickGUI extends Screen {
     private final ModuleManager moduleManager;
-    private Module.Category currentCategory = Module.Category.VISUAL;
 
     public ClickGUI(ModuleManager moduleManager) {
         super(Text.literal("TigerX Client"));
@@ -20,42 +19,39 @@ public class ClickGUI extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        int width = this.width;
-        int height = this.height;
+        int w = this.width;
+        int h = this.height;
 
-        context.fill(0, 0, width, height, 0xCC0A1628);
+        context.fill(0, 0, w, h, 0xCC0A1628);
 
-        int panelWidth = 320;
-        int panelHeight = 400;
-        int panelX = (width - panelWidth) / 2;
-        int panelY = (height - panelHeight) / 2;
+        int panelW = 300;
+        int panelH = 300;
+        int panelX = (w - panelW) / 2;
+        int panelY = (h - panelH) / 2;
 
-        context.fill(panelX, panelY, panelX + panelWidth, panelY + panelHeight, 0xEE0D1B2A);
-        context.fill(panelX, panelY, panelX + panelWidth, panelY + 40, 0xFF1B2A41);
-        context.fill(panelX, panelY + panelHeight - 20, panelX + panelWidth, panelY + panelHeight, 0xFF1B2A41);
+        context.fill(panelX, panelY, panelX + panelW, panelY + panelH, 0xFF0D1B2A);
+        context.fill(panelX, panelY, panelX + panelW, panelY + 36, 0xFF1B2A41);
 
         String username = MinecraftClient.getInstance().getSession().getUsername();
-        context.drawTextWithShadow(this.textRenderer, "Bienvenido, " + username, panelX + 12, panelY + 14, 0xFF7FB3FF);
+        context.drawTextWithShadow(this.textRenderer, "Bienvenido, " + username, panelX + 10, panelY + 12, 0xFF7FB3FF);
 
         List<Module> modules = moduleManager.getModules();
+        int y = panelY + 50;
 
-        int y = panelY + 60;
         for (Module module : modules) {
-            if (module.getCategory() != currentCategory) continue;
+            int mX = panelX + 15;
+            int mW = panelW - 30;
+            int mH = 36;
 
-            int moduleX = panelX + 20;
-            int moduleWidth = panelWidth - 40;
-            int moduleHeight = 40;
-
-            context.fill(moduleX, y, moduleX + moduleWidth, y + moduleHeight, 0xFF16263F);
-            context.drawTextWithShadow(this.textRenderer, module.getName(), moduleX + 10, y + 8, 0xFFFFFFFF);
-            context.drawTextWithShadow(this.textRenderer, module.getDescription(), moduleX + 10, y + 22, 0xFF8FA8C8);
+            context.fill(mX, y, mX + mW, y + mH, 0xFF16263F);
+            context.drawTextWithShadow(this.textRenderer, module.getName(), mX + 8, y + 6, 0xFFFFFFFF);
+            context.drawTextWithShadow(this.textRenderer, module.getDescription(), mX + 8, y + 20, 0xFF8FA8C8);
 
             String state = module.isEnabled() ? "ON" : "OFF";
-            int stateColor = module.isEnabled() ? 0xFF4CAF50 : 0xFFE74C3C;
-            context.drawTextWithShadow(this.textRenderer, state, moduleX + moduleWidth - 40, y + 14, stateColor);
+            int color = module.isEnabled() ? 0xFF4CAF50 : 0xFFE74C3C;
+            context.drawTextWithShadow(this.textRenderer, state, mX + mW - 35, y + 12, color);
 
-            y += moduleHeight + 6;
+            y += mH + 4;
         }
 
         super.render(context, mouseX, mouseY, delta);
@@ -63,28 +59,26 @@ public class ClickGUI extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        int width = this.width;
-        int height = this.height;
-        int panelWidth = 320;
-        int panelHeight = 400;
-        int panelX = (width - panelWidth) / 2;
-        int panelY = (height - panelHeight) / 2;
+        int w = this.width;
+        int h = this.height;
+        int panelW = 300;
+        int panelH = 300;
+        int panelX = (w - panelW) / 2;
+        int panelY = (h - panelH) / 2;
 
         List<Module> modules = moduleManager.getModules();
-        int y = panelY + 60;
+        int y = panelY + 50;
+
         for (Module module : modules) {
-            if (module.getCategory() != currentCategory) continue;
+            int mX = panelX + 15;
+            int mW = panelW - 30;
+            int mH = 36;
 
-            int moduleX = panelX + 20;
-            int moduleWidth = panelWidth - 40;
-            int moduleHeight = 40;
-
-            if (mouseX >= moduleX && mouseX <= moduleX + moduleWidth
-                    && mouseY >= y && mouseY <= y + moduleHeight) {
+            if (mouseX >= mX && mouseX <= mX + mW && mouseY >= y && mouseY <= y + mH) {
                 module.toggle();
                 return true;
             }
-            y += moduleHeight + 6;
+            y += mH + 4;
         }
         return super.mouseClicked(mouseX, mouseY, button);
     }
