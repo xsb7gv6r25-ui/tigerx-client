@@ -27,25 +27,32 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ChestESP extends Module {
-    private double maxDistance = 128.0;
+    private double maxDistance = 64.0;
+    private final List<BlockPos> cachedChests = new ArrayList<>();
+    private int tickCounter = 0;
 
     public ChestESP() {
         super("ChestESP", "Muestra cofres a traves de paredes", Category.VISUAL, 67);
     }
 
-    public double getMaxDistance() { return maxDistance; }
-    public void setMaxDistance(double distance) { this.maxDistance = distance; }
+    public void onTick(MinecraftClient client) {
+        if (!isEnabled()) {
+            cachedChests.clear();
+            tickCounter = 0;
+            return;
+        }
 
-    public List<BlockPos> scanChests(MinecraftClient client) {
-        List<BlockPos> chestPositions = new ArrayList<>();
-        if (!isEnabled()) return chestPositions;
+        tickCounter++;
+        if (tickCounter < 20) return;
+        tickCounter = 0;
+
+        cachedChests.clear();
 
         ClientWorld world = client.world;
-        if (world == null || client.player == null) return chestPositions;
+        if (world == null || client.player == null) return;
 
         BlockPos playerPos = client.player.getBlockPos();
-        int radius = (int) maxDistance;
-        int chunkRadius = radius >> 4;
+        int chunkRadius = (int) ((maxDistance / 16.0) + 1.0);
 
         int playerChunkX = playerPos.getX() >> 4;
         int playerChunkZ = playerPos.getZ() >> 4;
@@ -56,71 +63,69 @@ public class ChestESP extends Module {
                 if (chunk == null) continue;
 
                 for (BlockEntity be : chunk.getBlockEntities().values()) {
-                    if (be instanceof ChestBlockEntity
-                            || be instanceof BarrelBlockEntity
-                            || be instanceof ShulkerBoxBlockEntity
-                            || be instanceof HopperBlockEntity
-                            || be instanceof FurnaceBlockEntity
-                            || be instanceof BlastFurnaceBlockEntity
-                            || be instanceof SmokerBlockEntity
-                            || be instanceof DispenserBlockEntity
-                            || be instanceof DropperBlockEntity) {
-
+                    if (isContainer(be)) {
                         BlockPos pos = be.getPos();
-                        double distance = Math.sqrt(pos.getSquaredDistance(playerPos));
-                        if (distance <= maxDistance) {
-                            chestPositions.add(pos);
+                        if (playerPos.getSquaredDistance(pos) <= maxDistance * maxDistance) {
+                            cachedChests.add(pos);
                         }
                     }
                 }
             }
         }
-        return chestPositions;
     }
 
-    public void render(MatrixStack matrices, VertexConsumerProvider consumers, Vec3d cameraPos, List<BlockPos> chests) {
-        if (!isEnabled() || chests.isEmpty()) return;
+    private boolean isContainer(BlockEntity be) {
+        return be instanceof ChestBlockEntity
+                || be instanceof BarrelBlockEntity
+                || be instanceof ShulkerBoxBlockEntity
+                || be instanceof HopperBlockEntity
+                || be instanceof FurnaceBlockEntity
+                || be instanceof BlastFurnaceBlockEntity
+                || be instanceof SmokerBlockEntity
+                || be instanceof DispenserBlockEntity
+                || be instanceof DropperBlockEntity;
+    }
+
+    public void render(MatrixStack matrices, VertexConsumerProvider consumers, Vec3d cameraPos) {
+        if (!isEnabled() || cachedChests.isEmpty()) return;
 
         VertexConsumer buffer = consumers.getBuffer(RenderLayer.getLines());
+        Matrix4f matrix = matrices.peek().getPositionMatrix();
 
-        for (BlockPos pos : chests) {
-            Box box = new Box(pos).expand(0.002);
-            drawBox(matrices, buffer, box.offset(-cameraPos.x, -cameraPos.y, -cameraPos.z), 0.2f, 0.6f, 1.0f, 1.0f);
+        for (BlockPos pos : cachedChests) {
+            Box box = new Box(pos).expand(0.002).offset(-cameraPos.x, -cameraPos.y, -cameraPos.z);
+            drawBox(matrix, buffer, box);
         }
     }
 
-    private void drawBox(MatrixStack matrices, VertexConsumer buffer, Box box, float r, float g, float b, float a) {
-        Matrix4f m = matrices.peek().getPositionMatrix();
-        float x1 = (float) box.minX;
-        float y1 = (float) box.minY;
-        float z1 = (float) box.minZ;
-        float x2 = (float) box.maxX;
-        float y2 = (float) box.maxY;
-        float z2 = (float) box.maxZ;
+    private void drawBox(Matrix4f m, VertexConsumer buffer, Box box) {
+        float x1 = (float) box.minX, y1 = (float) box.minY, z1 = (float) box.minZ;
+        float x2 = (float) box.maxX, y2 = (float) box.maxY, z2 = (float) box.maxZ;
+        float r = 0.2f, g = 0.6f, b = 1.0f, a = 1.0f;
 
         buffer.vertex(m, x1, y1, z1).color(r, g, b, a).normal(0, 1, 0);
         buffer.vertex(m, x2, y1, z1).color(r, g, b, a).normal(0, 1, 0);
-        buffer.vertex(m, x2, y1, z2).color(r, g, b, a).normal(0, 1, 0);
-        buffer.vertex(m, x1, y1, z2).color(r, g, b, a).normal(0, 1, 0);
-        buffer.vertex(m, x1, y2, z1).color(r, g, b, a).normal(0, 1, 0);
-        buffer.vertex(m, x1, y2, z2).color(r, g, b, a).normal(0, 1, 0);
-        buffer.vertex(m, x2, y2, z2).color(r, g, b, a).normal(0, 1, 0);
-        buffer.vertex(m, x2, y2, z1).color(r, g, b, a).normal(0, 1, 0);
-        buffer.vertex(m, x1, y1, z1).color(r, g, b, a).normal(0, 1, 0);
-        buffer.vertex(m, x1, y2, z1).color(r, g, b, a).normal(0, 1, 0);
-        buffer.vertex(m, x2, y2, z1).color(r, g, b, a).normal(0, 1, 0);
-        buffer.vertex(m, x2, y1, z1).color(r, g, b, a).normal(0, 1, 0);
-        buffer.vertex(m, x1, y1, z2).color(r, g, b, a).normal(0, 1, 0);
-        buffer.vertex(m, x2, y1, z2).color(r, g, b, a).normal(0, 1, 0);
-        buffer.vertex(m, x2, y2, z2).color(r, g, b, a).normal(0, 1, 0);
-        buffer.vertex(m, x1, y2, z2).color(r, g, b, a).normal(0, 1, 0);
-        buffer.vertex(m, x1, y1, z1).color(r, g, b, a).normal(0, 1, 0);
-        buffer.vertex(m, x1, y1, z2).color(r, g, b, a).normal(0, 1, 0);
-        buffer.vertex(m, x1, y2, z2).color(r, g, b, a).normal(0, 1, 0);
-        buffer.vertex(m, x1, y2, z1).color(r, g, b, a).normal(0, 1, 0);
         buffer.vertex(m, x2, y1, z1).color(r, g, b, a).normal(0, 1, 0);
         buffer.vertex(m, x2, y1, z2).color(r, g, b, a).normal(0, 1, 0);
+        buffer.vertex(m, x2, y1, z2).color(r, g, b, a).normal(0, 1, 0);
+        buffer.vertex(m, x1, y1, z2).color(r, g, b, a).normal(0, 1, 0);
+        buffer.vertex(m, x1, y1, z2).color(r, g, b, a).normal(0, 1, 0);
+        buffer.vertex(m, x1, y1, z1).color(r, g, b, a).normal(0, 1, 0);
+        buffer.vertex(m, x1, y2, z1).color(r, g, b, a).normal(0, 1, 0);
+        buffer.vertex(m, x1, y2, z2).color(r, g, b, a).normal(0, 1, 0);
+        buffer.vertex(m, x1, y2, z2).color(r, g, b, a).normal(0, 1, 0);
+        buffer.vertex(m, x2, y2, z2).color(r, g, b, a).normal(0, 1, 0);
         buffer.vertex(m, x2, y2, z2).color(r, g, b, a).normal(0, 1, 0);
         buffer.vertex(m, x2, y2, z1).color(r, g, b, a).normal(0, 1, 0);
+        buffer.vertex(m, x2, y2, z1).color(r, g, b, a).normal(0, 1, 0);
+        buffer.vertex(m, x1, y2, z1).color(r, g, b, a).normal(0, 1, 0);
+        buffer.vertex(m, x1, y1, z1).color(r, g, b, a).normal(0, 1, 0);
+        buffer.vertex(m, x1, y2, z1).color(r, g, b, a).normal(0, 1, 0);
+        buffer.vertex(m, x2, y1, z1).color(r, g, b, a).normal(0, 1, 0);
+        buffer.vertex(m, x2, y2, z1).color(r, g, b, a).normal(0, 1, 0);
+        buffer.vertex(m, x1, y1, z2).color(r, g, b, a).normal(0, 1, 0);
+        buffer.vertex(m, x1, y2, z2).color(r, g, b, a).normal(0, 1, 0);
+        buffer.vertex(m, x2, y1, z2).color(r, g, b, a).normal(0, 1, 0);
+        buffer.vertex(m, x2, y2, z2).color(r, g, b, a).normal(0, 1, 0);
     }
 }
