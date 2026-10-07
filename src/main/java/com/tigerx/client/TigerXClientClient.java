@@ -9,10 +9,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
-import net.minecraft.util.math.BlockPos;
 import org.lwjgl.glfw.GLFW;
-
-import java.util.List;
 
 public class TigerXClientClient implements ClientModInitializer {
     private static KeyBinding openGuiKey;
@@ -46,6 +43,12 @@ public class TigerXClientClient implements ClientModInitializer {
                     if (mod != null) mod.toggle();
                 }
             }
+            if (TigerXClient.moduleManager != null) {
+                var mod = TigerXClient.moduleManager.getModule("ChestESP");
+                if (mod instanceof ChestESP esp) {
+                    esp.onTick(client);
+                }
+            }
         });
 
         WorldRenderEvents.AFTER_ENTITIES.register(context -> {
@@ -53,8 +56,7 @@ public class TigerXClientClient implements ClientModInitializer {
             if (TigerXClient.moduleManager == null) return;
             var mod = TigerXClient.moduleManager.getModule("ChestESP");
             if (mod instanceof ChestESP esp && esp.isEnabled()) {
-                List<BlockPos> chests = esp.scanChests(client);
-                esp.render(context.matrixStack(), context.consumers(), context.camera().getPos(), chests);
+                esp.render(context.matrixStack(), context.consumers(), context.camera().getPos());
             }
         });
     }
